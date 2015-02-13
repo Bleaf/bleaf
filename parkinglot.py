@@ -107,6 +107,13 @@ class ParkingLotTopo(Topo):
         self.addLink(h1, s1,
                       port1=0, port2=hostlink, **lconfig)
 
+        prevSwitch = s1
+        for i in range(2,n+1):
+            switch = self.addSwitch('s%s' % i)
+            host = self.addHost('h%s' % i, **hconfig)
+            self.addLink(prevSwitch, switch, port1=downlink, port2=uplink, **lconfig)
+            self.addLink(host, switch, port1=0, port2=hostlink, **lconfig)
+            prevSwitch = switch
         # Uncomment the next 8 lines to create a N = 3 parking lot topology
         #s2 = self.addSwitch('s2')
         #h2 = self.addHost('h2', **hconfig)
@@ -170,6 +177,13 @@ def run_parkinglot_expt(net, n):
               '> %s/iperf_server.txt' % args.dir, '&')
 
     waitListening(sender1, recvr, port)
+
+    for i in range(1,n+1):
+        sender = net.getNodeByName('h%s' % i)
+        sender.sendCmd('iperf -c %s -p %s -t %d -i 1 -yc > %s/iperf_%s.txt' % (recvr.IP(), 5001, seconds, args.dir, ('h%s' % i)))
+    for i in range(1,n+1):
+        sender = net.getNodeByName('h%s' % i)
+        sender.waitOutput()
 
     # TODO: start the sender iperf processes and wait for the flows to finish
     # Hint: Use getNodeByName() to get a handle on each sender.
